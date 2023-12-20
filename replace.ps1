@@ -27,85 +27,68 @@ Import-Module ImportExcel
 #excel file path
 $excelFilePath = "C:\Users\atacai\Desktop\testExcel.xlsx"
 
-# Read data from Excel
+# Leggo i dati di Excel
 $excelData = Import-Excel -Path $excelFilePath
 
-# Display the data
+# se serve per controllo, stampa i dati di excel
 #$excelData
 
+#Lista di oggetti
 $objectList = @()
 
+#ciclo i dati del excel e le salvo in un oggetto, colona/riga
 foreach ($row in $excelData) {
 	$name = $row.Name
-	$age = $row.Age
+	$id = $row.id
 	
 	$object1 = [PSCustomObject]@{
     Name = $row.Name
-    Age  = $row.Age
+    Id  = $row.id
 	}
 	
 	$objectList += $object1
-	
-	 #Write-Host "$($name) $($age)"
-	
-	##if ($row.Name -ne "" -or $row.Age -ne "") {
-     ##   Write-Host "$($row.Name), $($row.Age)"
-    ##}
 }
 
-# Display only values without headers
-foreach ($obj in $objectList) {
-    Write-Host "$($obj.Name) $($obj.Age)"
-}
-
-
-# Variables for SQL Server connection
+# Variabili per la connesione con SQL server
 $serverName = "ATACAI-NB"
 $databaseName = "hrport"
 $userId = "sa"
 $password = "Project1234"
 
-# Construct the connection string
+# String di connessione
 $connectionString = "Server=$serverName;Database=$databaseName;User Id=$userId;Password=$password;"
 
-# Create a SQL connection
+# Creo la connessione con il DB
 $connection = New-Object System.Data.SqlClient.SqlConnection
 $connection.ConnectionString = $connectionString
 
 try {
-    # Open the connection
+    # Apro la connessione
     $connection.Open()
-
-   
 	
 	foreach ($obj in $objectList) {
-	# SQL commands go here
-    $sqlCommand = $connection.CreateCommand()
-    $sqlCommand.CommandText = "UPDATE utenti SET nome = $obj.Name WHERE idUtente = $obj.Age"
-    #$result = $sqlCommand.ExecuteReader()
-    #Write-Host "$($obj.Name) $($obj.Age)"
 	
+    $sqlCommand = $connection.CreateCommand()
+	
+	#costruisco la string di connessione, con le variabli @
+    $sqlCommand.CommandText = "UPDATE utenti SET nome = @Name WHERE idUtente = @Id"
+	
+	#imposto le variabili per ogni dato del oggetto
+	$sqlCommand.Parameters.AddWithValue("@Name", $obj.Name) | Out-Null
+    $sqlCommand.Parameters.AddWithValue("@Id", $obj.Id) | Out-Null
+	
+    $result = $sqlCommand.ExecuteNonQuery()
 	}
 
+	Write-Host "Rows affected: $result"
 	
-	<#
-    # Process the results or perform other tasks
-	 while ($result.Read()) {
-        # Access each column by its name or index
-        $column1Value = $result["idUtente"]
-        $column2Value = $result["email"]
-
-        # Print or process the values
-        Write-Host "Column1: $column1Value, Column2: $column2Value"
-    }
-	#>
-
 } catch {
-    Write-Host "Error: $_"
+    Write-Host "Error updating data: $_"
 } finally {
     # Close the connection
     $connection.Close()
 }
+
 #Install-Module -Name SqlServer -Force -AllowClobber
 #Set-ExecutionPolicy RemoteSigned
 #Install-Module -Name ImportExcel -Force -AllowClobber
