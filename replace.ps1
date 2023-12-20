@@ -106,4 +106,7 @@ try {
     # Close the connection
     $connection.Close()
 }
+#Install-Module -Name SqlServer -Force -AllowClobber
+#Set-ExecutionPolicy RemoteSigned
+#Install-Module -Name ImportExcel -Force -AllowClobber
 
